@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阮诗军 分管项目 - 项目进度跟踪系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; color: #333; line-height: 1.6; padding: 10px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+        .header h1 { font-size: 1.5rem; margin-bottom: 15px; }
+        .stats { display: flex; gap: 15px; }
+        .stat-card { background: rgba(255, 255, 255, 0.2); padding: 15px; border-radius: 8px; text-align: center; flex: 1; }
+        .stat-card.started { background: rgba(76, 175, 80, 0.3); }
+        .stat-card.nashuitong { background: rgba(255, 152, 0, 0.3); }
+        .stat-number { display: block; font-size: 2rem; font-weight: bold; }
+        .stat-label { font-size: 0.9rem; opacity: 0.9; }
+        .search-box { margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 25px; font-size: 1rem; outline: none; }
+        .search-box input:focus { border-color: #667eea; }
+        .filters { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label { font-size: 0.9rem; color: #666; }
+        .filter-group select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        .project-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-left: 4px solid #667eea; width: 100%; }
+        .project-card.started { border-left-color: #4CAF50; }
+        .project-content { display: flex; gap: 15px; }
+        .project-info { flex: 1; }
+        .project-image-container { width: 200px; flex-shrink: 0; }
+        .project-image { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; }
+        .project-image.placeholder { width: 100%; height: 150px; background: #f8f9fa; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; }
+        .project-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .project-name { flex: 1; font-size: 1.1rem; color: #2c3e50; margin-right: 10px; }
+        .status-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; }
+        .status-badge.started { background: #4CAF50; color: white; }
+        .status-badge.not-started { background: #ff9800; color: white; }
+        .status-badge.nashuitong { background: #2196F3; color: white; }
+        .status-badge.not-nashuitong { background: #f44336; color: white; }
+        .status-badge.not-concerned { background: #9e9e9e; color: white; }
+        .status-badge.unknown { background: #ffeb3b; color: #333; }
+        .status-badge.other { background: #9c27b0; color: white; }
+        .project-details { margin-bottom: 10px; }
+        .detail-row { display: flex; gap: 15px; margin-bottom: 8px; }
+        .detail-item { flex: 1; display: flex; }
+        .detail-item.full-width { flex: 2; }
+        .detail-item strong { color: #666; min-width: 80px; }
+        .leader { color: #e74c3c; font-weight: bold; }
+        .unit { color: #3498db; font-weight: bold; }
+        .investment { color: #27ae60; font-weight: bold; }
+        .project-type { color: #8e44ad; font-weight: bold; }
+        .progress-text { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 5px; border-left: 3px solid #667eea; }
+        .project-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .meta-item { font-size: 0.8rem; color: #666; background: #f8f9fa; padding: 3px 6px; border-radius: 4px; }
+        .last-updated { text-align: center; color: #666; font-size: 0.8rem; margin-top: 10px; }
+        .nav-links { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .nav-link { background: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; color: #333; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .nav-link:hover { background: #667eea; color: white; }
+        .reset-filters { background: #667eea; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; }
+        .reset-filters:hover { background: #5a6fd8; }
+        @media (max-width: 768px) {
+            .stats { flex-direction: column; gap: 10px; }
+            .project-content { flex-direction: column; }
+            .project-image-container { width: 100%; }
+            .project-image { height: 200px; }
+            .project-image.placeholder { height: 200px; }
+            .project-header { flex-direction: column; align-items: flex-start; }
+            .status-badges { margin-top: 8px; }
+            .detail-row { flex-direction: column; }
+            .detail-item { flex-direction: column; }
+            .detail-item strong { min-width: auto; margin-bottom: 2px; }
+            .nav-links { justify-content: center; }
+            .filters { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部统计信息 -->
+        <div class="header">
+            <h1>📊 项目进度跟踪</h1>
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="totalCount">27</span>
+                    <span class="stat-label">总项目数</span>
+                </div>
+                <div class="stat-card started">
+                    <span class="stat-number" id="startedCount">8</span>
+                    <span class="stat-label">已开工</span>
+                </div>
+                <div class="stat-card nashuitong">
+                    <span class="stat-number" id="nashuitongCount">8</span>
+                    <span class="stat-label">已纳统</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 移动端导航链接 -->
+        
+    <div style="margin: 10px 0;">
+        <a href="mobile/index.html" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 0.9rem;">
+            📱 移动端视图
+        </a>
+    </div>
+    
+
+        <!-- 导航链接 -->
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">🏠 所有项目</a>
+            <a href="started.html" class="nav-link">✅ 已开工</a>
+            <a href="not-started.html" class="nav-link">⏳ 未开工</a>
+            <a href="search.html" class="nav-link">🔍 搜索项目</a>
+            <button class="reset-filters" onclick="resetAllFilters()">🔄 重置筛选</button>
+        </div>
+
+        <!-- 页面标题 -->
+        <h2 style="margin-bottom: 15px;">阮诗军 分管项目</h2>
+
+        <!-- 筛选器 -->
+        <div class="filters">
+            
+        <div class="filter-group">
+            <label for="leaderFilter">按分管区领导筛选:</label>
+            <select id="leaderFilter" onchange="applyAllFilters()">
+                <option value="">所有分管区领导</option>
+        <option value="姜明">姜明</option><option value="张国金">张国金</option><option value="彭斌祥">彭斌祥</option><option value="李书涛">李书涛</option><option value="焦建">焦建</option><option value="郑威">郑威</option><option value="阮诗军">阮诗军</option><option value="陈春晖">陈春晖</option><option value="陈聪">陈聪</option>
+            </select>
+        </div>
+        
+            
+        <div class="filter-group">
+            <label for="unitFilter">按责任单位筛选:</label>
+            <select id="unitFilter" onchange="applyAllFilters()">
+                <option value="">所有责任单位</option>
+        <option value="临空投公司">临空投公司</option><option value="临空管委会">临空管委会</option><option value="前川街">前川街</option><option value="区交通运输局">区交通运输局</option><option value="区住更局">区住更局</option><option value="区公共检验检测中心">区公共检验检测中心</option><option value="区公安分局">区公安分局</option><option value="区农业农村局">区农业农村局</option><option value="区卫健局">区卫健局</option><option value="区园林和林业局">区园林和林业局</option><option value="区城管局">区城管局</option><option value="区委组织部">区委组织部</option><option value="区应急管理局">区应急管理局</option><option value="区教育局">区教育局</option><option value="区文旅局">区文旅局</option><option value="区机关事务服务中心">区机关事务服务中心</option><option value="区民政局">区民政局</option><option value="区气象局">区气象局</option><option value="区水务和湖泊局">区水务和湖泊局</option><option value="区消防大队">区消防大队</option><option value="区生态环境分局">区生态环境分局</option><option value="区税务局">区税务局</option><option value="区经创局">区经创局</option><option value="区自建局">区自建局</option><option value="区融媒体中心">区融媒体中心</option><option value="区退役军人事务局">区退役军人事务局</option><option value="天河街">天河街</option><option value="姚家集街">姚家集街</option><option value="木兰乡">木兰乡</option><option value="木兰山风景区服务中心">木兰山风景区服务中心</option><option value="木兰投公司">木兰投公司</option><option value="木兰文旅投公司">木兰文旅投公司</option><option value="李家集街">李家集街</option><option value="横店街">横店街</option><option value="滠口街">滠口街</option><option value="王家河街">王家河街</option><option value="盘龙交投公司">盘龙交投公司</option><option value="盘龙城建公司">盘龙城建公司</option><option value="盘龙城管委会">盘龙城管委会</option><option value="盘龙水投公司">盘龙水投公司</option><option value="祁家湾街">祁家湾街</option><option value="罗汉寺街">罗汉寺街</option><option value="蔡店街">蔡店街</option><option value="蔡榨街">蔡榨街</option><option value="长轩岭街">长轩岭街</option>
+            </select>
+        </div>
+        
+            
+    <div class="filter-group">
+        <label for="startStatusFilter">按开工情况筛选:</label>
+        <select id="startStatusFilter" onchange="applyAllFilters()">
+            <option value="">所有开工情况</option>
+            <option value="已开工">已开工</option>
+            <option value="未开工">未开工</option>
+        </select>
+    </div>
+    
+            
+    <div class="filter-group">
+        <label for="nashuitongFilter">按纳统情况筛选:</label>
+        <select id="nashuitongFilter" onchange="applyAllFilters()">
+            <option value="">所有纳统情况</option>
+            <option value="已纳统">已纳统</option>
+            <option value="未纳统">未纳统</option>
+            <option value="不涉及纳统">不涉及纳统</option>
+        </select>
+    </div>
+    
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索项目名称、分管区领导、责任单位..." 
+                   onkeyup="applyAllFilters()">
+        </div>
+
+        <!-- 项目列表 -->
+        <div class="projects-list" id="projectsList">
+            
+            <div class="project-card started" 
+                 data-name="木兰农创中心" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="2024年4月2日已中标（武汉建工基础设施工程有限公司 , 武汉市政工程设计研究院有限责任公司 , 中信建筑设计研究总院有限公司）。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">木兰农创中心</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 150000万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2024年06月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2024年4月2日已中标（武汉建工基础设施工程有限公司 , 武汉市政工程设计研究院有限责任公司 , 中信建筑设计研究总院有限公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="“五好两宜”和美乡村试点试验建设" 
+                 data-leader="阮诗军" 
+                 data-unit="姚家集街" 
+                 data-progress="2024年12月31日批复初设，2024年4月12日后陆续中标（武汉环通建设集团有限责任公司、武汉万中建设集团有限公司、湖北江鼎建设工程有限公司、湖北海致建筑有限公司等公司），已入库"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">“五好两宜”和美乡村试点试验建设</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">姚家集街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 41500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2024年03月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2024年12月31日批复初设，2024年4月12日后陆续中标（武汉环通建设集团有限责任公司、武汉万中建设集团有限公司、湖北江鼎建设工程有限公司、湖北海致建筑有限公司等公司），已入库</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="石道线川龙大道至岱黄高速" 
+                 data-leader="阮诗军" 
+                 data-unit="区交通运输局" 
+                 data-progress="2023年10月16日中标（武汉建工集团股份有限公司）。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">石道线川龙大道至岱黄高速</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">区交通运输局</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 31500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2024年04月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2023年10月16日中标（武汉建工集团股份有限公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="现代大道一期（东秀路－东兴路）" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="2023年9月15日中标（ 武汉环通建设集团有限责任公司）。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">现代大道一期（东秀路－东兴路）</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 13700万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2023年10月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2023年9月15日中标（ 武汉环通建设集团有限责任公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="东宇路一期（石道线－现代大道）" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="2023年9月15日中标（武汉环通建设集团有限责任公司，北京市政建设集团有限责任公司 , 中都工程设计有限公司）。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东宇路一期（石道线－现代大道）</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 4600万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2024年04月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2023年9月15日中标（武汉环通建设集团有限责任公司，北京市政建设集团有限责任公司 , 中都工程设计有限公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="东秀路（石道线－现代大道）" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="2023年9月15日中标（武汉环通建设集团有限责任公司，北京市政建设集团有限责任公司 , 中都工程设计有限公司）。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东秀路（石道线－现代大道）</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 4100万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2023年10月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2023年9月15日中标（武汉环通建设集团有限责任公司，北京市政建设集团有限责任公司 , 中都工程设计有限公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="武汉现代农产品加工园污水主干管网" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="2024年12月6日批复初设，应急项目，10月30日签订施工合同（湖北文枫建设工程有限公司）。2025年6月11日已进场施工。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">武汉现代农产品加工园污水主干管网</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 1800万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年05月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2024年12月6日批复初设，应急项目，10月30日签订施工合同（湖北文枫建设工程有限公司）。2025年6月11日已进场施工。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card started" 
+                 data-name="横店街临空东区C0202地块燃气管道迁改工程" 
+                 data-leader="阮诗军" 
+                 data-unit="横店街" 
+                 data-progress="2023年12月24日中标（武汉能源规划设计有限公司，中石化江汉油建工程有限公司），续建项目。"
+                 data-nashuitong="已纳统"
+                 data-started="已开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">横店街临空东区C0202地块燃气管道迁改工程</h3>
+                            <div class="status-badges">
+                                <span class="status-badge started">
+                                    已开工
+                                </span>
+                                <span class="status-badge nashuitong">已纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">横店街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 4600万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2024年01月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2023年12月24日中标（武汉能源规划设计有限公司，中石化江汉油建工程有限公司），续建项目。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="横店大道石道至岱黄段" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙交投公司" 
+                 data-progress="2025年8月28日中标（中国建筑第五工程局有限公司）。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">横店大道石道至岱黄段</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙交投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 28000万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年10月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">2025年8月28日中标（中国建筑第五工程局有限公司）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="2024—2026年度宜居宜业和美乡村精品村、重点村建设" 
+                 data-leader="阮诗军" 
+                 data-unit="区农业农村局" 
+                 data-progress="和美乡村建设项目涉及13个街道，共32个项目，总投资约5.14亿元，截止目前，1个项目已经批复初设（滠口1个），13个项目已批复可研（祁家湾3个，前川2个，横店1个，李集2个，长岭1个，罗汉2个，木兰乡2个）,18个项目召开可研评审会正在修编（蔡店2个，王家河6个，姚集3个，蔡榨2个，李集2个，长岭2个，木兰山1个）"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">2024—2026年度宜居宜业和美乡村精品村、重点村建设</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">区农业农村局</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 63000万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年06月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">和美乡村建设项目涉及13个街道，共32个项目，总投资约5.14亿元，截止目前，1个项目已经批复初设（滠口1个），13个项目已批复可研（祁家湾3个，前川2个，横店1个，李集2个，长岭1个，罗汉2个，木兰乡2个）,18个项目召开可研评审会正在修编（蔡店2个，王家河6个，姚集3个，蔡榨2个，李集2个，长岭2个，木兰山1个）</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="精细街一期" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="5月14日批复初设，10月11日区财政局反馈财审意见，10月29日现场核算工程预算。11月11日财评完成，11月24日发布招标公告。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">精细街一期</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 11700万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">5月14日批复初设，10月11日区财政局反馈财审意见，10月29日现场核算工程预算。11月11日财评完成，11月24日发布招标公告。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="东丰路" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="3月12日开展初设评审，11月14日批复初设，正在财评。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东丰路</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 9900万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">3月12日开展初设评审，11月14日批复初设，正在财评。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="2025年高标准农田建设" 
+                 data-leader="阮诗军" 
+                 data-unit="区农业农村局" 
+                 data-progress="市农业农村局审批，预计11月25日前批复可研。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">2025年高标准农田建设</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">区农业农村局</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 7500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年06月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">市农业农村局审批，预计11月25日前批复可研。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        <span class="meta-item">📝 7月初下任务</span>
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="武汉现代农产品加工园市政供水设施" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="企业临时供水已于24年12月24日完成，不影响企业正常生产和临时用水。
+9月19日召开初设评审会，11月14日批复初设，正在准备财评资料。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">武汉现代农产品加工园市政供水设施</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 6000万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年07月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">企业临时供水已于24年12月24日完成，不影响企业正常生产和临时用水。
+9月19日召开初设评审会，11月14日批复初设，正在准备财评资料。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="东宇路二期" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="4月20日开展初设评审，11月14日批复初设，正在财评。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东宇路二期</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 5500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">4月20日开展初设评审，11月14日批复初设，正在财评。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="东源路" 
+                 data-leader="阮诗军" 
+                 data-unit="盘龙水投公司" 
+                 data-progress="5月14日批复初设，9月29日中标（北京市政建设集团有限责任公司，湖北乐宇建设工程有限公司），10月25日已报送入库资料。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东源路</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">盘龙水投公司</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 4600万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">5月14日批复初设，9月29日中标（北京市政建设集团有限责任公司，湖北乐宇建设工程有限公司），10月25日已报送入库资料。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="丰天大道南段提档升级" 
+                 data-leader="阮诗军" 
+                 data-unit="木兰乡" 
+                 data-progress="9月23日批复可研，11月12日召开初设评审会，木兰乡正在修编。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">丰天大道南段提档升级</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">木兰乡</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 1600万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年09月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">9月23日批复可研，11月12日召开初设评审会，木兰乡正在修编。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="区综合检验检测实验室" 
+                 data-leader="阮诗军" 
+                 data-unit="区公共检验检测中心" 
+                 data-progress="正在编制初设。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">区综合检验检测实验室</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">区公共检验检测中心</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 1000万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年12月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">正在编制初设。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="沿河村还建点基础设施配套与环境整治" 
+                 data-leader="阮诗军" 
+                 data-unit="姚家集街" 
+                 data-progress="初设正在编制"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">沿河村还建点基础设施配套与环境整治</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">姚家集街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 800万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">初设正在编制</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="木兰草原周边环境综合整治" 
+                 data-leader="阮诗军" 
+                 data-unit="王家河街" 
+                 data-progress="正在初设评审。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">木兰草原周边环境综合整治</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">王家河街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 800万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年09月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">正在初设评审。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="农业排灌渠道改造" 
+                 data-leader="阮诗军" 
+                 data-unit="李家集街" 
+                 data-progress="9月18日函审，李集街正在修编初设。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">农业排灌渠道改造</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">李家集街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 600万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年07月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">9月18日函审，李集街正在修编初设。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="凤凰寨村2025年小型农田水利补短板建设项目" 
+                 data-leader="阮诗军" 
+                 data-unit="蔡榨街" 
+                 data-progress="10月21日批复初设，正在准备财评资料。"
+                 data-nashuitong="未纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">凤凰寨村2025年小型农田水利补短板建设项目</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-nashuitong">未纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">蔡榨街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 540万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年06月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">10月21日批复初设，正在准备财评资料。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="研泥路" 
+                 data-leader="阮诗军" 
+                 data-unit="罗汉寺街" 
+                 data-progress="9月4日批复可研，10月21日挂网招标。"
+                 data-nashuitong="不涉及纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">研泥路</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-concerned">不涉及纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">罗汉寺街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年08月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">9月4日批复可研，10月21日挂网招标。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="万亩优质蔬菜基地配套工程（一期）" 
+                 data-leader="阮诗军" 
+                 data-unit="祁家湾街" 
+                 data-progress="正在编制初设（代可研）。"
+                 data-nashuitong="不涉及纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">万亩优质蔬菜基地配套工程（一期）</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-concerned">不涉及纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">祁家湾街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 500万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年09月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">正在编制初设（代可研）。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="东风新村环境综合整治" 
+                 data-leader="阮诗军" 
+                 data-unit="长轩岭街" 
+                 data-progress="9月22日批复初设，长轩岭街9月25日挂网招标，确保12月进场开工。9月28日政府采购意向公示，10月28日结束，10月30日发布招标征求意见公告（5个工作日）11月6日发布招标公告，11月26日开标。"
+                 data-nashuitong="不涉及纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">东风新村环境综合整治</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-concerned">不涉及纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">长轩岭街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 300万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年07月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">9月22日批复初设，长轩岭街9月25日挂网招标，确保12月进场开工。9月28日政府采购意向公示，10月28日结束，10月30日发布招标征求意见公告（5个工作日）11月6日发布招标公告，11月26日开标。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="一心回乡至邱皮村污水管网" 
+                 data-leader="阮诗军" 
+                 data-unit="罗汉寺街" 
+                 data-progress="10月29日函审，正在修编初设。"
+                 data-nashuitong="不涉及纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">一心回乡至邱皮村污水管网</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-concerned">不涉及纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">罗汉寺街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 300万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 新开工</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年07月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">10月29日函审，正在修编初设。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="project-card " 
+                 data-name="农产品仓储保鲜冷链物流设施" 
+                 data-leader="阮诗军" 
+                 data-unit="蔡榨街" 
+                 data-progress="今年不做开工要求"
+                 data-nashuitong="不涉及纳统"
+                 data-started="未开工">
+
+                <div class="project-content">
+                    <div class="project-info">
+                        <div class="project-header">
+                            <h3 class="project-name">农产品仓储保鲜冷链物流设施</h3>
+                            <div class="status-badges">
+                                <span class="status-badge ">
+                                    未开工
+                                </span>
+                                <span class="status-badge not-concerned">不涉及纳统</span>
+                            </div>
+                        </div>
+
+                        <div class="project-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>分管区领导:</strong>
+                                    <span class="leader">阮诗军</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>责任单位:</strong>
+                                    <span class="unit">蔡榨街</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <strong>项目总投资:</strong>
+                                    <span class="investment">💰 300万元</span>
+                                </div>
+
+                                <div class="detail-item">
+                                    <strong>项目性质:</strong>
+                                    <span class="project-type">🏷️ 续建</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>预计开工:</strong>
+                                    <span>2025年06月</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <div class="detail-item full-width">
+                                    <strong>项目进展:</strong>
+                                    <div class="progress-text">今年不做开工要求</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-meta">
+        
+                        </div>
+                    </div>
+
+                    <div class="project-image-container">
+                        <div class="project-image placeholder">暂无图片</div>
+                    </div>
+                </div>
+            </div>
+        
+        </div>
+
+        <div class="last-updated">
+            最后更新: 2025-11-25 15:24:46
+        </div>
+    </div>
+
+    <script>
+        // 综合筛选函数
+        function applyAllFilters() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const leaderFilter = document.getElementById('leaderFilter')?.value || '';
+            const unitFilter = document.getElementById('unitFilter')?.value || '';
+            const startStatusFilter = document.getElementById('startStatusFilter')?.value || '';
+            const nashuitongFilter = document.getElementById('nashuitongFilter')?.value || '';
+
+            const projects = document.getElementsByClassName('project-card');
+            let visibleCount = 0;
+            let startedCount = 0;
+            let nashuitongCount = 0;
+
+            for (let i = 0; i < projects.length; i++) {
+                const project = projects[i];
+                const name = project.getAttribute('data-name').toLowerCase();
+                const leader = project.getAttribute('data-leader');
+                const unit = project.getAttribute('data-unit').toLowerCase();
+                const progress = project.getAttribute('data-progress').toLowerCase();
+                const started = project.getAttribute('data-started');
+                const nashuitong = project.getAttribute('data-nashuitong');
+
+                // 检查所有筛选条件
+                const matchSearch = name.includes(searchInput) || 
+                                  leader.toLowerCase().includes(searchInput) || 
+                                  unit.includes(searchInput) || 
+                                  progress.includes(searchInput);
+
+                const matchLeader = !leaderFilter || leader === leaderFilter;
+                const matchUnit = !unitFilter || project.getAttribute('data-unit') === unitFilter;
+                const matchStartStatus = !startStatusFilter || started === startStatusFilter;
+                const matchNashuitong = !nashuitongFilter || nashuitong === nashuitongFilter;
+
+                if (matchSearch && matchLeader && matchUnit && matchStartStatus && matchNashuitong) {
+                    project.style.display = '';
+                    visibleCount++;
+                    if (started === '已开工') {
+                        startedCount++;
+                    }
+                    if (nashuitong === '已纳统') {
+                        nashuitongCount++;
+                    }
+                } else {
+                    project.style.display = 'none';
+                }
+            }
+
+            // 更新统计数字
+            document.getElementById('totalCount').textContent = visibleCount;
+            document.getElementById('startedCount').textContent = startedCount;
+            document.getElementById('nashuitongCount').textContent = nashuitongCount;
+        }
+
+        // 重置所有筛选
+        function resetAllFilters() {
+            document.getElementById('searchInput').value = '';
+            if (document.getElementById('leaderFilter')) {
+                document.getElementById('leaderFilter').value = '';
+            }
+            if (document.getElementById('unitFilter')) {
+                document.getElementById('unitFilter').value = '';
+            }
+            if (document.getElementById('startStatusFilter')) {
+                document.getElementById('startStatusFilter').value = '';
+            }
+            if (document.getElementById('nashuitongFilter')) {
+                document.getElementById('nashuitongFilter').value = '';
+            }
+            applyAllFilters();
+        }
+
+        
+    </script>
+</body>
+</html>
